@@ -45,9 +45,9 @@ Two environment variables are used to define the locations of various supporting
 
 The software uses `JBOLO_PATH` environmental variable to define the path to this repository. It assumes that you have the aperture functions and atmospheric source files saved in this repo under the structure
 
-> /path/to/jbolo/
->      ApertureFuncs
->      atmos 
+    /path/to/jbolo/
+        ApertureFuncs
+        atmos 
 
 - The Aperture function pickle files required to calcualate the horn-horn correlation factors.  
 Those live in the jbolo/ApertureFuncs directory. The code will find them if you define
@@ -60,20 +60,20 @@ should find it if you've put it there.
 
 The software uses the `MODELS_PATH` environmental variable to link to the base location for any band response files used in the instrument models for the optics and detector definitions. For example, if you have 
 
-> /path/to/my_models/
->     detectors/
->          band1.txt
->          band2.txt
->     optics/
->          lpe_1.txt
->          alumia.txt
+    /path/to/my_models/
+        detectors/
+            band1.txt
+            band2.txt
+        optics/
+            lpe_1.txt
+            alumia.txt
 
 Then you can set `MODELS_PATH` to be `/path/to/my_models/` and then you only need `detectors/band1.txt` in your experiment definitions. This makes it easier to point jbolo at different repos of models for different experiments.
 
 If you want to not have to think able these paths, add this to your `.bash_profile` or `.bashrc` file:
 
-> export JBOLO_PATH=/path/to/jbolo/
-> export MODELS_PATH=/path/to/models/
+    export JBOLO_PATH=/path/to/jbolo/
+    export MODELS_PATH=/path/to/models/
 
 
 ## Things that will come "soon":
