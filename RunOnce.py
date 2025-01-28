@@ -18,6 +18,7 @@ import yaml
 import pickle
 import argparse
 from jbolo.jbolo_funcs import *
+import jbolo.utils as utils
 
 # Parse the arguments
 parser = argparse.ArgumentParser(description='Run baseline model for a given yaml file.')
@@ -31,7 +32,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Load the yaml file into the sim dictionary, where we'll also put all the results.
-sim = yaml.safe_load(open(args.expt_yaml))
+sim = utils.load_sim(args.expt_yaml)
 
 # Run optical calculations all the way up through the bolometer absorption, ie P_optical.
 run_optics(sim)

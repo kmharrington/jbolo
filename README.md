@@ -25,6 +25,7 @@ the optics themselves (losses, temperatures, etc), and the detector parameters.
 The python code driving jbolo lives in the python/ subdirectory.  The files there are:
 - physics.py  This is mostly copied from the original BoloCalc/bolo-calc, with some functions removed or simplified.
 - jbolo_funcs.py  This has two main functions, "run_optics" and "run_bolo", as well as some helper functions for those and some reporting functions.  Typically one would "run_optics" to find the photon-related properties (optical power, photon noise, etc), then "run_bolo" to calculate detector NEPs, NETs, etc.  However, one could just use one of those routines without the other if you want to streamline calculations for some other purpose.
+- utils.py contains utilities related to loading experiments and files
 - RunOnce.py  This is a python script that reads a yaml file, calls run_optics, then run_bolo, then prints some useful information.  It can be run from the command line (with the yaml filename as an argument), and will save the sim to a pickle file if you use the relevant keyword argument.  This is (for me) the typical way jbolo is run.
 
 Two python jupyter notebooks of interest are in the top-level directory.
@@ -49,7 +50,7 @@ The software uses `JBOLO_PATH` environmental variable to define the path to this
         ApertureFuncs
         atmos 
 
-- The Aperture function pickle files required to calcualate the horn-horn correlation factors.  
+- The Aperture function pickle files are required to calcualate the horn-horn correlation factors.  
 Those live in the jbolo/ApertureFuncs directory. The code will find them if you define
 that environment variable;  your other option is to run things directly from your jbolo
 directory, or make symlinks to the relevant places.

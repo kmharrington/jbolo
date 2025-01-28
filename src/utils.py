@@ -4,6 +4,8 @@ import numpy as np
 
 def load_sim(filename):
     s = yaml.safe_load(open(filename))
+    if 'tags' not in s:
+        return s
     tag_substr( s, s['tags'])
     return s
     
