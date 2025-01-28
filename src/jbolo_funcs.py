@@ -29,11 +29,11 @@ def get_atmos_from_hdf5(sim, nu, **kwargs):
     # If the path and filename is specified for the hdf5 file, use that.
     # If not, look in the jbolo directory, where it should also be if the
     # user put it there as the README suggests.
+    jbolo_path = os.environ.get("JBOLO_PATH", "")
     if 'file' in sim['sources']['atmosphere'].keys():
-        file_atmos = sim['sources']['atmosphere']['file']
+        file_atmos = os.path.join(jbolo_path, sim['sources']['atmosphere']['file'])
     else:
-        jbolo_path = os.environ.get("JBOLO_PATH", "./")
-        file_atmos = os.path.join(jbolo_path,'atmos/atm_20201217.hdf5')
+        file_atmos = os.path.join(jbolo_path, 'atmos/atm_20201217.hdf5')
 
     site =       sim['sources']['atmosphere']['site']
     elev =   int(sim['sources']['atmosphere']['elevation'])
@@ -176,7 +176,7 @@ def run_optics(sim):
         #
         # Read band from file, normalized by det_eff.  File expected to be in GHz.
             case 'bandfile':
-                nuband_in,band_in = np.loadtxt(sim_ch['band_response']['fname'], unpack=True)
+                nuband_in,band_in = utils.load_band_file(sim_ch['band_response']['fname'])
                 band = np.interp(nu_ghz,nuband_in,band_in,left=0, right=0)
                 sim_out_ch['det_bandwidth'] = np.trapz(band, nu)/np.max(band)
                 sim_out_ch['det_bandcenter'] = np.trapz(band*nu/np.max(band), nu)/sim_out_ch['det_bandwidth']
@@ -268,7 +268,7 @@ def run_optics(sim):
                     if (type(sim_elem['absorption']) is list):
                         emiss = sim_elem['absorption'][chnum]*np.ones(len(nu))
                     elif isinstance(sim_elem['absorption'],str):
-                        nuemiss_in,emiss_in = np.loadtxt(sim_elem['absorption'], unpack=True)
+                        nuemiss_in,emiss_in = utils.load_band_file(sim_elem['absorption'])
                         emiss = np.interp(nu_ghz,nuemiss_in,emiss_in,left=0, right=0)
                     else:
                         emiss = sim_elem['absorption']*np.ones(len(nu))
@@ -293,7 +293,7 @@ def run_optics(sim):
                 if (type(sim_elem[item]) is list):  # if it's a list
                     tempdict[item] = sim_elem[item][chnum]
                 elif isinstance(sim_elem[item],str): # if it's a band filename
-                    nuitem_in,item_in = np.loadtxt(sim_elem[item], unpack=True)
+                    nuitem_in,item_in = utils.load_band_file(sim_elem[item])
                     tempdict[item] = np.interp(nu_ghz,nuitem_in,item_in,left=0, right=0)
                 else:
                     tempdict[item] = sim_elem[item]
