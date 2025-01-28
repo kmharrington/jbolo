@@ -40,28 +40,40 @@ Two python jupyter notebooks of interest are in the top-level directory.
 To install jbolo run this in the main directory:
 
     pip install . 
-    
-To make your life easy in terms of accessing a few supporting files, you should
-create an environment variable pointing to the root of your jbolo installation.
-For example, if you are running the bash shell you'd add this to your .bash_profile :
 
-export JBOLO_PATH=/Users/ruhl/code/jbolo/
+Two environment variables are used to define the locations of various supporting files used by this repository. These are the path to where you have this repo saved and the path to where all the instrument models are saved. 
 
-Right now this helps with two inputs:
-- There are some Aperture function pickle files required to calcualate the horn-horn correlation factors.  
-Those live in the jbolo/ApertureFuncs directory.   The code will find them if you define
+The software uses `JBOLO_PATH` environmental variable to define the path to this repository. It assumes that you have the aperture functions and atmospheric source files saved in this repo under the structure
+
+> /path/to/jbolo/
+>      ApertureFuncs
+>      atmos 
+
+- The Aperture function pickle files required to calcualate the horn-horn correlation factors.  
+Those live in the jbolo/ApertureFuncs directory. The code will find them if you define
 that environment variable;  your other option is to run things directly from your jbolo
 directory, or make symlinks to the relevant places.
-- You'll probably need Charlie Hill's hdf5 file containing a grid of atmospheric mission 
-vs (frequency, pwv, elevation).  Download it from 
-http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm_20201217.hdf5
-and put it in jbolo/atmos/atm_20201217.hdf5 .  You can either point to 
-that file in the input yaml file, or not point to it and the code 
-should find it if you've put it there. 
+- The atmosphere files need to be downloaded or otherwise generated. You can download Charlie Hill's hdf5 file containing a grid of atmospheric mission 
+vs (frequency, pwv, elevation) from http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm_20201217.hdf5
+and put it in jbolo/atmos/atm_20201217.hdf5 .  You can either point to that file in the input yaml file, or not point to it and the code 
+should find it if you've put it there.
 
-You can run jbolo from within your jbolo directory (as the example notebooks do),
-or create a parallel directory with your scripts, yamls, and notebooks that call it.  This
-is what we do for cmb-s4, in S4's bolo_calc_runs/jbolo repo.
+The software uses the `MODELS_PATH` environmental variable to link to the base location for any band response files used in the instrument models for the optics and detector definitions. For example, if you have 
+
+> /path/to/my_models/
+>     detectors/
+>          band1.txt
+>          band2.txt
+>     optics/
+>          lpe_1.txt
+>          alumia.txt
+
+Then you can set `MODELS_PATH` to be `/path/to/my_models/` and then you only need `detectors/band1.txt` in your experiment definitions. This makes it easier to point jbolo at different repos of models for different experiments.
+
+If you want to not have to think able these paths, add this to your `.bash_profile` or `.bashrc` file:
+
+> export JBOLO_PATH=/path/to/jbolo/
+> export MODELS_PATH=/path/to/models/
 
 
 ## Things that will come "soon":
