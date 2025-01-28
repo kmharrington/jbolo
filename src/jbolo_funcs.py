@@ -4,6 +4,7 @@ import h5py as hp
 import toml
 import os
 from copy import copy #np.copy breaks scalars
+import logging
 
 from .physics import *
 import jbolo.utils as utils
@@ -16,6 +17,8 @@ mu0 = 1.256637e-6
 ep0 = 8.854188e-12
 Z0 = np.sqrt(mu0/ep0)
 Tcmb = 2.725
+
+logger = logging.getLogger()
 
 def get_atmos_from_hdf5(sim, nu, **kwargs):
     # Given: (site, elevation, and pwv), plus the frequencies of interest (in nu), where nu is in ghz
@@ -105,7 +108,7 @@ def run_optics(sim):
     #  whereas bolocalc seems to have set
     #    T = (1-R)*(1-A)*(1-S)
     #
-    #print('Running optics')
+    logger.debug('Running optics')
 
     # Go in and set all the optics components properties to the default
     # value if they've not been set explicitly already.
@@ -117,7 +120,7 @@ def run_optics(sim):
 
     # Loop through all the channels, doing the optics calcs for each in turn.
     for ch in sim['channels'].keys():
-
+        logger.debug( ch )
         # create shortcut pointer to this channels' stuff, for use throughout
         sim_ch = sim['channels'][ch]
         chnum = sim_ch['chnum']
@@ -238,7 +241,10 @@ def run_optics(sim):
         # We'll do all the instrument's optical elements first, in this block of code,
         # then move on to the "sources" like the atmosphere and cmb.
         # We start with the element nearest the detector.
+        logger.debug( "Loading optical elements" )
+        
         for elem in reversed(sim['optical_elements'].keys()):
+            logger.debug(f"Loading {elem}: {sim['optical_elements'][elem]}")
             sim_elem = sim['optical_elements'][elem]
             sim_out_ch['optics'][elem] = {}
 
