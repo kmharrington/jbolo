@@ -32,6 +32,6 @@ def tag_substr(dest, tags, max_recursion=20):
     return dest
 
 def load_band_file(fname):
-    base = os.environ.get( "MODELS_PATH", "" )
+    base = os.environ.get( "JBOLO_MODELS_PATH", "" )
     fpath = os.path.join( base, fname )
     return np.loadtxt( fpath, unpack=True)

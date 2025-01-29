@@ -59,7 +59,7 @@ vs (frequency, pwv, elevation) from http://pbfs.physics.berkeley.edu/BoloCalc/AT
 and put it in jbolo/atmos/atm_20201217.hdf5 .  You can either point to that file in the input yaml file, or not point to it and the code 
 should find it if you've put it there.
 
-The software uses the `MODELS_PATH` environmental variable to link to the base location for any band response files used in the instrument models for the optics and detector definitions. For example, if you have 
+The software uses the `JBOLO_MODELS_PATH` environmental variable to link to the base location for any band response files used in the instrument models for the optics and detector definitions. For example, if you have 
 
     /path/to/my_models/
         detectors/
@@ -74,7 +74,7 @@ Then you can set `MODELS_PATH` to be `/path/to/my_models/` and then you only nee
 If you want to not have to think able these paths, add this to your `.bash_profile` or `.bashrc` file:
 
     export JBOLO_PATH=/path/to/jbolo/
-    export MODELS_PATH=/path/to/models/
+    export JBOLO_MODELS_PATH=/path/to/models/
 
 
 ## Things that will come "soon":
