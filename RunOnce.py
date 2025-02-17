@@ -48,8 +48,7 @@ print_full_table(sim)
 # Write it all to a pickle file
 #  (fwiw, the "with open" syntax automatically cleans up and closes the file)
 if (args.pkl_out != None):
-    with open(args.pkl_out,'wb') as f:
-        pickle.dump( sim, f )
+    utils.dump_pickle( sim, args.pkl_out)
 
 # If you need to read the pickle file back in, do:
 #with open(filename, 'rb') as f:

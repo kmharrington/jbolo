@@ -1,6 +1,7 @@
 import os
 import yaml
 import numpy as np
+import pickle
 
 def load_sim(filename):
     s = yaml.safe_load(open(filename))
@@ -35,3 +36,10 @@ def load_band_file(fname):
     base = os.environ.get( "JBOLO_MODELS_PATH", "" )
     fpath = os.path.join( base, fname )
     return np.loadtxt( fpath, unpack=True)
+
+def dump_pickle( sim, fname ):
+    base, f = os.path.split(fname)
+    if len(base)>0 and not os.path.exists(base):
+        os.makedirs(base)
+    with open( fname, "wb" ) as f:
+        pickle.dump( sim, f )
