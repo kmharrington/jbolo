@@ -4,6 +4,7 @@ import h5py as hp
 import toml
 import os
 from copy import copy #np.copy breaks scalars
+import logging
 
 from .physics import *
 import jbolo.utils as utils
@@ -17,6 +18,8 @@ ep0 = 8.854188e-12
 Z0 = np.sqrt(mu0/ep0)
 Tcmb = 2.725
 
+logger = logging.getLogger()
+
 def get_atmos_from_hdf5(sim, nu, **kwargs):
     # Given: (site, elevation, and pwv), plus the frequencies of interest (in nu), where nu is in ghz
     #  read in (freq, tx, Tb) from hdf5 file in bolo-calc's format.
@@ -26,11 +29,11 @@ def get_atmos_from_hdf5(sim, nu, **kwargs):
     # If the path and filename is specified for the hdf5 file, use that.
     # If not, look in the jbolo directory, where it should also be if the
     # user put it there as the README suggests.
+    jbolo_path = os.environ.get("JBOLO_PATH", "")
     if 'file' in sim['sources']['atmosphere'].keys():
-        file_atmos = sim['sources']['atmosphere']['file']
+        file_atmos = os.path.join(jbolo_path, sim['sources']['atmosphere']['file'])
     else:
-        jbolo_path = os.environ.get("JBOLO_PATH", "./")
-        file_atmos = os.path.join(jbolo_path,'atmos/atm_20201217.hdf5')
+        file_atmos = os.path.join(jbolo_path, 'atmos/atm_20201217.hdf5')
 
     site =       sim['sources']['atmosphere']['site']
     elev =   int(sim['sources']['atmosphere']['elevation'])
@@ -105,7 +108,7 @@ def run_optics(sim):
     #  whereas bolocalc seems to have set
     #    T = (1-R)*(1-A)*(1-S)
     #
-    #print('Running optics')
+    logger.debug('Running optics')
 
     # Go in and set all the optics components properties to the default
     # value if they've not been set explicitly already.
@@ -117,7 +120,7 @@ def run_optics(sim):
 
     # Loop through all the channels, doing the optics calcs for each in turn.
     for ch in sim['channels'].keys():
-
+        logger.debug( ch )
         # create shortcut pointer to this channels' stuff, for use throughout
         sim_ch = sim['channels'][ch]
         chnum = sim_ch['chnum']
@@ -173,7 +176,7 @@ def run_optics(sim):
         #
         # Read band from file, normalized by det_eff.  File expected to be in GHz.
             case 'bandfile':
-                nuband_in,band_in = np.loadtxt(sim_ch['band_response']['fname'], unpack=True)
+                nuband_in,band_in = utils.load_band_file(sim_ch['band_response']['fname'])
                 band = np.interp(nu_ghz,nuband_in,band_in,left=0, right=0)
                 sim_out_ch['det_bandwidth'] = np.trapz(band, nu)/np.max(band)
                 sim_out_ch['det_bandcenter'] = np.trapz(band*nu/np.max(band), nu)/sim_out_ch['det_bandwidth']
@@ -228,8 +231,10 @@ def run_optics(sim):
         sim_out_ch['optics']['detector']['P_opt'] = 0.0
 
         # for use later in optical element efficiency calculations
+        #  This is also the "gain bandwidth product" of the detector.  Note that this includes the "det_eff" factor.
         detector_efficiency_integral = np.trapz(sim_out_ch['optics']['detector']['effic'], nu)
-        np.trapz(effic*                         sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
+        sim_out_ch['optics']['detector']['gain_bw_product'] = detector_efficiency_integral
+        #np.trapz(effic*                         sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
 
         # Do update the cumulative efficiency, for use with the next element.
         effic_cumul *= effic
@@ -238,7 +243,10 @@ def run_optics(sim):
         # We'll do all the instrument's optical elements first, in this block of code,
         # then move on to the "sources" like the atmosphere and cmb.
         # We start with the element nearest the detector.
+        logger.debug( "Loading optical elements" )
+        
         for elem in reversed(sim['optical_elements'].keys()):
+            logger.debug(f"Loading {elem}: {sim['optical_elements'][elem]}")
             sim_elem = sim['optical_elements'][elem]
             sim_out_ch['optics'][elem] = {}
 
@@ -253,7 +261,17 @@ def run_optics(sim):
                     emiss = ohmic_loss + ruze_loss
                     
                 case 'LossTangent':
-                    emiss = loss_from_losstangent(nu,sim_elem['thickness'],sim_elem['index'],sim_elem['loss_tangent'])
+                    if (type(sim_elem['thickness']) is list): # MP (adding ability to use list of loss tangents, eg per frequency band)
+                        thickness = sim_elem['thickness'][chnum] # MP
+                    else:                                        # MP
+                        thickness = sim_elem['thickness']        # MP
+                    if (type(sim_elem['loss_tangent']) is list): # MP
+                        loss_tan = sim_elem['loss_tangent'][chnum] # MP
+                    else:                                        # MP
+                        loss_tan = sim_elem['loss_tangent']        # MP
+                    emiss = loss_from_losstangent(nu,thickness,sim_elem['index'], loss_tan) # MP
+                    # emiss = loss_from_losstangent(nu,sim_elem['thickness'],sim_elem['index'],sim_elem['loss_tangent']) # MP
+
                     
                 case 'AlphaPowerLaw':
                     emiss = loss_from_alphapowerlaw(nu,sim_elem['thickness'],sim_elem['a'],sim_elem['b'])
@@ -262,7 +280,7 @@ def run_optics(sim):
                     if (type(sim_elem['absorption']) is list):
                         emiss = sim_elem['absorption'][chnum]*np.ones(len(nu))
                     elif isinstance(sim_elem['absorption'],str):
-                        nuemiss_in,emiss_in = np.loadtxt(sim_elem['absorption'], unpack=True)
+                        nuemiss_in,emiss_in = utils.load_band_file(sim_elem['absorption'])
                         emiss = np.interp(nu_ghz,nuemiss_in,emiss_in,left=0, right=0)
                     else:
                         emiss = sim_elem['absorption']*np.ones(len(nu))
@@ -287,7 +305,7 @@ def run_optics(sim):
                 if (type(sim_elem[item]) is list):  # if it's a list
                     tempdict[item] = sim_elem[item][chnum]
                 elif isinstance(sim_elem[item],str): # if it's a band filename
-                    nuitem_in,item_in = np.loadtxt(sim_elem[item], unpack=True)
+                    nuitem_in,item_in = utils.load_band_file(sim_elem[item])
                     tempdict[item] = np.interp(nu_ghz,nuitem_in,item_in,left=0, right=0)
                 else:
                     tempdict[item] = sim_elem[item]
@@ -326,6 +344,7 @@ def run_optics(sim):
         # Now that we've gotten through all the instrument elements, calculate
         # some instrument-only things.
         # instrument system (detector + optics) band center and bandwidth
+        sim_out_ch['sys_gain_bw_product'] = np.trapz(effic_cumul,nu)
         sim_out_ch['sys_bandwidth'] = np.trapz(effic_cumul,nu)/np.max(effic_cumul)
         sim_out_ch['sys_bandcenter'] = np.trapz(effic_cumul*nu/np.max(effic_cumul), nu)/sim_out_ch['sys_bandwidth']
         #
@@ -420,10 +439,14 @@ def run_optics(sim):
             sim_out_ch['sources'][src]['effic_cumul_avg'] = \
                 np.trapz(sim_out_ch['optics']['detector']['effic']*sim_out_ch['sources'][src]['effic_cumul'],nu)/detector_efficiency_integral
 
+            # Update the total efficiency to include the current element before the next block.
+            effic_cumul *= effic
+            
             # If we just did the atmosphere, calculate the band center and width to the celestial sources, ie above the atmos.
             if src == 'atmosphere':
                 sim_out_ch['sky_bandwidth'] = np.trapz(effic_cumul,nu)/np.max(effic_cumul)
                 sim_out_ch['sky_bandcenter'] = np.trapz(effic_cumul*nu/np.max(effic_cumul), nu)/sim_out_ch['sky_bandwidth']
+                sim_out_ch['sky_effic'] = np.copy(effic_cumul)
                 #
                 # Find a measure of total system optical efficiency, including the atmosphere.  
                 # 
@@ -432,8 +455,6 @@ def run_optics(sim):
 
 
             
-            effic_cumul *= effic
-        
         # report scalars of things summed over all elements, and over frequency
         sim['outputs'][ch]['P_opt'] = copy(P_opt_cumul)
 
@@ -528,14 +549,21 @@ def run_bolos(sim):
         if sim['bolo_config']['psat_method']=='specified':
             Psat = sim_ch['psat']
         if sim['bolo_config']['psat_method'] == 'from_optical_power':
-            Psat = sim['bolo_config']['psat_factor']*sim_out_ch['P_opt']
+            if (type(sim['bolo_config']['psat_factor']) is list): # MP  (make it so we can have different psat factors per channel)
+                psat_fact = sim['bolo_config']['psat_factor'][chnum] # MP
+            else:                                        # MP
+                psat_fact = sim['bolo_config']['psat_factor']        # MP
+            Psat = psat_fact*sim_out_ch['P_opt']
         sim_out_ch['P_sat'] = copy(Psat)
 
         # Calculate and save electrical power, and from that the bolometer voltage
         P_elec = Psat - sim_out_ch['P_opt']
         if P_elec<0:
             print('Warning:  Detector saturated, channel: {0:s}'.format(ch))
-        sim_out_ch['P_elec']= copy(P_elec)
+            sim_out_ch['P_elec'] = 0
+        else:
+            sim_out_ch['P_elec']= copy(P_elec)
+
         V_bolo = np.sqrt(P_elec*R_bolo)
 
         # Calculate NEP_phonon.
@@ -611,6 +639,8 @@ def run_bolos(sim):
         sim_out_ch['NET_NC_wafer'] = sim_out_ch['NET_NC_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
         sim_out_ch['NETrj_C_wafer'] =  sim_out_ch['NETrj_C_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
         sim_out_ch['NETrj_NC_wafer'] = sim_out_ch['NETrj_NC_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
+        if 'num_wafers_per_tube' in sim['bolo_config'].keys():
+            sim_out_ch['NET_C_tube'] =  sim_out_ch['NET_C_wafer']/np.sqrt(sim['bolo_config']['num_wafers_per_tube']) # MP
 
 
 ##### Print a single optics channel's optical-chain info
