@@ -178,8 +178,8 @@ def run_optics(sim):
             case 'bandfile':
                 nuband_in,band_in = utils.load_band_file(sim_ch['band_response']['fname'])
                 band = np.interp(nu_ghz,nuband_in,band_in,left=0, right=0)
-                sim_out_ch['det_bandwidth'] = np.trapz(band, nu)/np.max(band)
-                sim_out_ch['det_bandcenter'] = np.trapz(band*nu/np.max(band), nu)/sim_out_ch['det_bandwidth']
+                sim_out_ch['det_bandwidth'] = np.trapezoid(band, nu)/np.max(band)
+                sim_out_ch['det_bandcenter'] = np.trapezoid(band*nu/np.max(band), nu)/sim_out_ch['det_bandwidth']
                 effic = band*sim_ch['det_eff']  # shaped by band, so peak is probably the indicator of interest
         #
         # Specify bandshape in two numpy vectors already loaded into sim, nuband_in (frequency in GHz) and band_in.
@@ -188,8 +188,8 @@ def run_optics(sim):
                 nuband_in = sim_ch['band_response']['nuband_in']
                 band_in =   sim_ch['band_response']['band_in']
                 band = np.interp(nu_ghz,nuband_in,band_in,left=0, right=0)
-                sim_out_ch['det_bandwidth'] = np.trapz(band, nu)/np.max(band)
-                sim_out_ch['det_bandcenter'] = np.trapz(band*nu/np.max(band), nu)/sim_out_ch['det_bandwidth']
+                sim_out_ch['det_bandwidth'] = np.trapezoid(band, nu)/np.max(band)
+                sim_out_ch['det_bandcenter'] = np.trapezoid(band*nu/np.max(band), nu)/sim_out_ch['det_bandwidth']
                 effic = band*sim_ch['det_eff']  # shaped by band, so peak is probably the indicator of interest
         #
         # Logistic model, normalized by det_eff, edges specified in GHz.
@@ -199,8 +199,8 @@ def run_optics(sim):
                 _a = sim_ch['band_response']['a']
                 _n = sim_ch['band_response']['n']
                 band = logistic_bandmodel(nu_ghz, _nulow, _nuhigh,_a,_n)
-                sim_out_ch['det_bandwidth'] = np.trapz(band, nu)/np.max(band)
-                sim_out_ch['det_bandcenter'] = np.trapz(band*nu, nu)/sim_out_ch['det_bandwidth']
+                sim_out_ch['det_bandwidth'] = np.trapezoid(band, nu)/np.max(band)
+                sim_out_ch['det_bandcenter'] = np.trapezoid(band*nu, nu)/sim_out_ch['det_bandwidth']
                 effic = band*sim_ch['det_eff']
                 
             case 'AlphaPowerLaw':
@@ -232,9 +232,9 @@ def run_optics(sim):
 
         # for use later in optical element efficiency calculations
         #  This is also the "gain bandwidth product" of the detector.  Note that this includes the "det_eff" factor.
-        detector_efficiency_integral = np.trapz(sim_out_ch['optics']['detector']['effic'], nu)
+        detector_efficiency_integral = np.trapezoid(sim_out_ch['optics']['detector']['effic'], nu)
         sim_out_ch['optics']['detector']['gain_bw_product'] = detector_efficiency_integral
-        #np.trapz(effic*                         sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
+        #np.trapezoid(effic*                         sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
 
         # Do update the cumulative efficiency, for use with the next element.
         effic_cumul *= effic
@@ -321,7 +321,7 @@ def run_optics(sim):
             Pnu = Inu*AOmega*(sim['bolo_config']['N_polarizations']/2.0) # this is the power per Hz emitted by this element.
             sim_out_ch['optics'][elem]['Pnu'] = copy(Pnu)  # save the watts/Hz for this element.
             Pnu_total += Pnu*effic_cumul  # store how much of this element's Pnu gets to the bolometer, Watts/Hz.
-            P_opt_elem = np.trapz(effic_cumul*Pnu,nu)  # Watts that get to the bolometer from this elmeent.
+            P_opt_elem = np.trapezoid(effic_cumul*Pnu,nu)  # Watts that get to the bolometer from this elmeent.
             P_opt_cumul += P_opt_elem   # add this element to the total.
             # Store the optical power absorbed by the bolo from this element, and the efficiency vs nu, of this element
             sim_out_ch['optics'][elem]['P_opt'] = copy(P_opt_elem)
@@ -331,12 +331,12 @@ def run_optics(sim):
             # Calculate the "average efficiency" for this optical element, which we take to be
             # eff_element_avg = [ integral( effic_element(nu)*effic_detector(nu)) ] / [ integral( effic_detector(nu)) ]
             sim_out_ch['optics'][elem]['effic_avg'] = \
-                np.trapz(effic*sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
+                np.trapezoid(effic*sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
             
             # The cumulative efficiency we store at this element is *to* (not through) the relevant element.
             sim_out_ch['optics'][elem]['effic_cumul'] = copy(effic_cumul)
             sim_out_ch['optics'][elem]['effic_cumul_avg'] = \
-                np.trapz(effic_cumul,nu)/(detector_efficiency_integral/sim_ch['det_eff'])
+                np.trapezoid(effic_cumul,nu)/(detector_efficiency_integral/sim_ch['det_eff'])
 
             # Update cumulative efficiency, for use with the next element.
             effic_cumul *= effic
@@ -344,9 +344,9 @@ def run_optics(sim):
         # Now that we've gotten through all the instrument elements, calculate
         # some instrument-only things.
         # instrument system (detector + optics) band center and bandwidth
-        sim_out_ch['sys_gain_bw_product'] = np.trapz(effic_cumul,nu)
-        sim_out_ch['sys_bandwidth'] = np.trapz(effic_cumul,nu)/np.max(effic_cumul)
-        sim_out_ch['sys_bandcenter'] = np.trapz(effic_cumul*nu/np.max(effic_cumul), nu)/sim_out_ch['sys_bandwidth']
+        sim_out_ch['sys_gain_bw_product'] = np.trapezoid(effic_cumul,nu)
+        sim_out_ch['sys_bandwidth'] = np.trapezoid(effic_cumul,nu)/np.max(effic_cumul)
+        sim_out_ch['sys_bandcenter'] = np.trapezoid(effic_cumul*nu/np.max(effic_cumul), nu)/sim_out_ch['sys_bandwidth']
         #
         # We want to store some properties of the instrument independent of the
         # detector efficiency.  To calculate these, we take the quantities we've
@@ -360,7 +360,7 @@ def run_optics(sim):
         # Efficiency of the optical elements (not detector)
         sim_out_ch['optics_effic_total']=effic_cumul/sim_out_ch['optics']['detector']['effic']
         sim_out_ch['optics_effic_total_avg']= \
-            np.trapz(sim_out_ch['optics_effic_total']*sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
+            np.trapezoid(sim_out_ch['optics_effic_total']*sim_out_ch['optics']['detector']['effic'],nu)/detector_efficiency_integral
         sim_out_ch['inst_effic_avg'] =  sim_out_ch['optics_effic_total_avg'] * sim_ch['det_eff']
 
 
@@ -402,7 +402,7 @@ def run_optics(sim):
                                 _Inu1 = bb_spec_rad(nu, _Tb1, emiss=1.0)
                                 _Inu2 = bb_spec_rad(nu, _Tb2, emiss=1.0)
                                 dPatm = (_Inu2 - _Inu1)*AOmega*(sim['bolo_config']['N_polarizations']/2.0)
-                                sim_out_ch['sources'][src]['dPdpwv'] = np.trapz(10*effic_cumul*dPatm,nu)
+                                sim_out_ch['sources'][src]['dPdpwv'] = np.trapezoid(10*effic_cumul*dPatm,nu)
 
                     # Add option for file here, not done yet.
                         case 'textfile':
@@ -426,7 +426,7 @@ def run_optics(sim):
 
             sim_out_ch['sources'][src]['Pnu'] = copy(Pnu)
             Pnu_total += Pnu*effic_cumul
-            P_opt_elem = np.trapz(effic_cumul*Pnu,nu)
+            P_opt_elem = np.trapezoid(effic_cumul*Pnu,nu)
             P_opt_cumul += P_opt_elem
             # calculate and store the total optical power on the bolometer from this element.
             sim_out_ch['sources'][src]['P_opt'] = copy(P_opt_elem)
@@ -435,17 +435,17 @@ def run_optics(sim):
 
             #     
             sim_out_ch['sources'][src]['effic_avg'] = \
-                np.trapz(sim_out_ch['optics']['detector']['effic']*sim_out_ch['sources'][src]['effic'],nu)/detector_efficiency_integral
+                np.trapezoid(sim_out_ch['optics']['detector']['effic']*sim_out_ch['sources'][src]['effic'],nu)/detector_efficiency_integral
             sim_out_ch['sources'][src]['effic_cumul_avg'] = \
-                np.trapz(sim_out_ch['optics']['detector']['effic']*sim_out_ch['sources'][src]['effic_cumul'],nu)/detector_efficiency_integral
+                np.trapezoid(sim_out_ch['optics']['detector']['effic']*sim_out_ch['sources'][src]['effic_cumul'],nu)/detector_efficiency_integral
 
             # Update the total efficiency to include the current element before the next block.
             effic_cumul *= effic
             
             # If we just did the atmosphere, calculate the band center and width to the celestial sources, ie above the atmos.
             if src == 'atmosphere':
-                sim_out_ch['sky_bandwidth'] = np.trapz(effic_cumul,nu)/np.max(effic_cumul)
-                sim_out_ch['sky_bandcenter'] = np.trapz(effic_cumul*nu/np.max(effic_cumul), nu)/sim_out_ch['sky_bandwidth']
+                sim_out_ch['sky_bandwidth'] = np.trapezoid(effic_cumul,nu)/np.max(effic_cumul)
+                sim_out_ch['sky_bandcenter'] = np.trapezoid(effic_cumul*nu/np.max(effic_cumul), nu)/sim_out_ch['sky_bandwidth']
                 sim_out_ch['sky_effic'] = np.copy(effic_cumul)
                 #
                 # Find a measure of total system optical efficiency, including the atmosphere.  
@@ -495,10 +495,10 @@ def run_optics(sim):
 
         # Find conversion factor to NET, which is dP_opt/dT_cmb
         #   Pn_opt_cmb = eta_to_cmb*Bnu(Tcmb,nu)
-        #   P_opt_cmb = trapz(Pn_opt_cmb,nu)
+        #   P_opt_cmb = trapezoid(Pn_opt_cmb,nu)
         #
         #   dPn_dT_cmb = eta_to_cmb*dPdT(Tcmb,nu)
-        #   dP_opt/dT_cmb = trapz(dPn_dT_cmb)
+        #   dP_opt/dT_cmb = trapezoid(dPn_dT_cmb)
 
         dpdt = dPdT(nu, Tcmb, sim_out_ch['sources']['cmb']['effic_cumul'], AOmega, sim['bolo_config']['N_polarizations'])
         sim_out_ch['dpdt'] = copy(dpdt)
