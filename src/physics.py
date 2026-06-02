@@ -204,8 +204,8 @@ def photon_NEP_single(P_nu, freqs):
       nep_bose : bose contribution
 
     """
-    nep_bose    = np.sqrt(2.*np.trapz(P_nu**2,freqs))
-    nep_poisson = np.sqrt(2.*h*np.trapz(freqs*P_nu,freqs))
+    nep_bose    = np.sqrt(2.*np.trapezoid(P_nu**2,freqs))
+    nep_poisson = np.sqrt(2.*h*np.trapezoid(freqs*P_nu,freqs))
     nep = np.sqrt(nep_bose**2 + nep_poisson**2)
     return nep, nep_poisson, nep_bose
 
@@ -221,8 +221,8 @@ def photon_NEP_single_v2(Pnu,nuvec):
     n = Pnu/(h*nuvec)  # Photon occupation number.
     A = 2*(h**2)*(nuvec**2)  # The factor of 2 here is bandwidth
 
-    NEP_poisson = np.sqrt(np.trapz(A*n,nuvec))
-    NEP_bose = np.sqrt(np.trapz(A*n**2,nuvec))
+    NEP_poisson = np.sqrt(np.trapezoid(A*n,nuvec))
+    NEP_bose = np.sqrt(np.trapezoid(A*n**2,nuvec))
     NEP_photon = np.sqrt(NEP_poisson**2 + NEP_bose**2)
     n_avg = np.mean(n)
 
@@ -242,11 +242,11 @@ def photon_NEP_with_corrs(Pnu_apert, Pnu_stop, apert_factor, stop_factor, freqs)
     Pnu_tot = Pnu_apert + Pnu_stop
 
     # Poisson noise doesn't care about the pixel-pixel correlations
-    nep_corr_poisson = np.sqrt(2.*h*np.trapz(freqs*Pnu_tot,freqs))
+    nep_corr_poisson = np.sqrt(2.*h*np.trapezoid(freqs*Pnu_tot,freqs))
 
     # Bose noise does care about them.
     # test:
-    nep_corr_bose = np.sqrt(2.*np.trapz((Pnu_apert*apert_factor + Pnu_stop*stop_factor)**2,freqs))  # The factor of 2 here is wrong.
+    nep_corr_bose = np.sqrt(2.*np.trapezoid((Pnu_apert*apert_factor + Pnu_stop*stop_factor)**2,freqs))  # The factor of 2 here is wrong.
 
     nep_corr = np.sqrt(nep_corr_poisson**2 + nep_corr_bose**2)
 
@@ -336,7 +336,7 @@ def dPdT(nu, T, effic, AOmega, Npol=1):
     _expx = np.exp(_x)
     _dBdT = _prefac*(nu**4 / T**2)*(_expx/(_expx-1)**2)
 
-    return np.trapz(_dBdT*AOmega*effic, nu)
+    return np.trapezoid(_dBdT*AOmega*effic, nu)
 
 def dPdTrj(nu, effic, AOmega, Npol=1):
     """
@@ -352,4 +352,4 @@ def dPdTrj(nu, effic, AOmega, Npol=1):
 
     _dBdT = Npol*kB*(nu/c)**2
 
-    return np.trapz(_dBdT*AOmega*effic, nu)
+    return np.trapezoid(_dBdT*AOmega*effic, nu)
