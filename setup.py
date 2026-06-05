@@ -24,5 +24,7 @@ setup(
     long_description = readme(),
     install_requires=[
         'numpy',
+        "h5py",
+        "toml",
     ],
 )
