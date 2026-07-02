@@ -40,6 +40,7 @@ Two python jupyter notebooks of interest are in the top-level directory.
 
 To install jbolo run this in the main directory:
 
+    pip install -r requirements.txt
     pip install . 
 
 Two environment variables are used to define the locations of various supporting files used by this repository. These are the path to where you have this repo saved and the path to where all the instrument models are saved. 

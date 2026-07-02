@@ -635,10 +635,16 @@ def run_bolos(sim):
 
 
         # Make NET_wafer, taking correlation factor and yield and detector count into consideration.
-        sim_out_ch['NET_C_wafer'] =  sim_out_ch['NET_C_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
-        sim_out_ch['NET_NC_wafer'] = sim_out_ch['NET_NC_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
-        sim_out_ch['NETrj_C_wafer'] =  sim_out_ch['NETrj_C_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
-        sim_out_ch['NETrj_NC_wafer'] = sim_out_ch['NETrj_NC_total']/np.sqrt(sim['bolo_config']['yield']*sim_ch['num_det_per_wafer'])
+        if 'yield' in sim_ch:
+            ch_yield = sim_ch['yield']
+        elif 'yield' in sim['bolo_config']:
+            ch_yield = sim['bolo_config']['yield']
+        else:
+            raise ValueError("'yield' must be defined in bolo_config or in each channel")
+        sim_out_ch['NET_C_wafer'] =  sim_out_ch['NET_C_total']/np.sqrt(ch_yield*sim_ch['num_det_per_wafer'])
+        sim_out_ch['NET_NC_wafer'] = sim_out_ch['NET_NC_total']/np.sqrt(ch_yield*sim_ch['num_det_per_wafer'])
+        sim_out_ch['NETrj_C_wafer'] =  sim_out_ch['NETrj_C_total']/np.sqrt(ch_yield*sim_ch['num_det_per_wafer'])
+        sim_out_ch['NETrj_NC_wafer'] = sim_out_ch['NETrj_NC_total']/np.sqrt(ch_yield*sim_ch['num_det_per_wafer'])
         if 'num_wafers_per_tube' in sim['bolo_config'].keys():
             sim_out_ch['NET_C_tube'] =  sim_out_ch['NET_C_wafer']/np.sqrt(sim['bolo_config']['num_wafers_per_tube']) # MP
 

@@ -9,7 +9,7 @@ class InputParam(object):
         name of parameter
     generate : function
         function takes n_sims and draws that many parameters for the time
-    set_sim_param : function
+    set_sim_param : function( sim, val)
         function takes a draw value and sets it in a sim configuration
     """
     def __init__(self, name, generate, set_sim_param):
@@ -17,6 +17,50 @@ class InputParam(object):
         self.generate = generate
         self.set_sim_param = set_sim_param
 
+class InputParam_Psat(InputParam):
+    """Detector Psats are special because, for most forecasting sims, these are set 
+    by the optical loading on the detectors. Realitically, we use the central values
+    to set our Psat detector requirements and then we 
+    
+    Arguments
+    ----------
+    name : str
+        name of parameter
+    base_sim_file : str
+        file path to the base sim containing the central values for all the 
+        input parameters
+    error_frac : float
+        the fractional error to set at the 1 sigma level for these parameters 
+    """
+    def __init__(self, name, base_sim_file, error_frac):
+        self.name = name
+        self.base_sim = base_sim_file
+        self.error_frac = error_frac
+
+    def generate(self, n_sims):
+        sim = utils.load_sim(self.base_sim)
+        jf.run_optics(sim)
+        jf.run_bolos(sim)
+
+        self.center_psats = {}
+        for ch in sorted(sim['channels']):
+            self.center_psats[ch] = sim['outputs'][ch]['P_sat']
+
+        values = np.zeros( (n_sims, len(sim['channels'])) )
+
+        for n, ch in enumerate(sorted(sim['channels'])):
+            values[:,n] = np.random.normal( 
+                loc=self.center_psats[ch], 
+                scale=self.error_frac*self.center_psats[ch], 
+                size=(n_sims,)
+            )
+        return values
+        
+    def set_sim_param(self, sim, val):
+        sim['psat_method'] = 'specified'
+        for n, ch in enumerate(sorted(sim['channels'])):
+            sim['channels'][ch]['P_sat'] = val[n]
+            
 class OutputParam(object):
     """
     name : str
