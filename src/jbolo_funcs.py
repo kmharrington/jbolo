@@ -568,8 +568,19 @@ def run_bolos(sim):
 
         # Calculate NEP_phonon.
         # This also calculates Gdynamic, which may be needed for loop gain calc (next)
-        Gdyn = Gdynamic(Psat, beta, Tbath, Tc)
+        G_dynamic_method = sim['bolo_config'].get(
+            'G_dynamic_method', 'from_psat_beta'
+        )
+        if G_dynamic_method == 'specified':
+            Gdyn = sim_ch['G_dynamic']
+        elif G_dynamic_method == 'from_psat_beta':
+            Gdyn = Gdynamic(Psat, beta, Tbath, Tc)
+        else:
+            raise ValueError(
+                f"G_dynamic_method must be 'specified' or 'from_psat_beta'"
+            )
         sim_out_ch['G_dynamic'] = copy(Gdyn)
+            
         if 'F_link_method' in sim['bolo_config'].keys():
             if sim['bolo_config']['F_link_method']=='specified':
                 sim_out_ch['F_link'] = sim_ch['F_link']
