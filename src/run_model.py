@@ -11,9 +11,25 @@ from jbolo.utils import load_sim
 
 
 def apply_telescope_configs(sim, configs):
-    sim['bolo_config']['T_bath'] = configs.get(
-        "T_bath", sim['bolo_config']['T_bath']
-    )
+    """
+    telescope:
+        bolo_config:
+            straight numbers to update
+        optical_elements:
+            values to update but using dictionary update
+    """
+    assert 'telescope' in configs, f"telescope not in configurations"
+    tel_configs = configs['telescope']
+    if 'bolo_config' in tel_configs:
+        for k in tel_configs['bolo_config']:
+            sim['bolo_config'][k] = tel_configs['bolo_config'][k]
+
+    if 'optical_elements' in tel_configs:
+        for optic in tel_configs['optical_elements']:
+            assert optic in sim['optical_elements'], f"cannot find {optic} to update"
+            sim_optic = sim['optical_elements'][optic]
+            sim_optic.update( tel_configs['optical_elements'][optic] )
+            sim['optical_elements'][optic] = sim_optic
 
 def apply_pwv( ch_cfgs, pwv, sin_el):
     assert len(ch_cfgs['P_opt']) == 2, "P_opt not written as linear equation"
@@ -35,6 +51,13 @@ def apply_wafer_configs(sim, configs, wafer, update_det_params=True):
     """
     apply per wafer configurations, these configs are in the form:
     note that the per channel configs are updated directly into sim['channels']
+    If update_det_params is true, then kappa, n, and T_c are used with T_bath 
+    to calculate the psat of the detectors
+
+    if update_det_params is false, psat is pulled straight from the 
+    configuration file
+
+    if  G_dynamic is in the config, set it as explicitly specified
 
     wafers:
       wafer_name:
@@ -46,18 +69,12 @@ def apply_wafer_configs(sim, configs, wafer, update_det_params=True):
           det_eff: X       ## measured adjusted for v4r1 passbands
           psat: X          ## measured in UXM Dashboard
           kappa: X         ## measured in UXM Dashboard
-          G_dynamic: X      ## measured in UXM Dashboard
+          G_dynamic: X     ## measured in UXM Dashboard
           n: X             ## measured in UXM Dashboard
           P_opt: ## measured as m*PWV/sin(el) + b
             - b
             - m 
           NEP_dark: X      ## measured in UXM Dashboard
-          NEP_meas: X      ## measured in commissioning paper
-          NEP_vib_shift: X ## shift in median noise due to high noise tails
-          abscal_rj: 
-            - X            ## measured in commissioning paper
-            - sigma_x      ## measured in commissioning paper
-          pton_det_eff: X  ## measured assuming v3r6 passbands
     """
     assert wafer in configs['wafers'], f"{wafer} not in configurations"
     wafer_configs = configs['wafers'][wafer]
@@ -89,6 +106,10 @@ def apply_wafer_configs(sim, configs, wafer, update_det_params=True):
                 sim['bolo_config']['T_c']
             )
             sim['bolo_config']['psat_method'] = 'specified'
+        elif 'psat' in wafer_configs[ch]:
+            sim['bolo_config']['psat_method'] = 'specified'
+
+        if 'G_dynamic' in wafer_configs[ch]:
             apply_Gdynamic( 
                 sim['channels'][ch], 
                 sim['bolo_config']['T_bath'] ,
