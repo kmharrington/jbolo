@@ -56,7 +56,7 @@ Those live in the jbolo/ApertureFuncs directory. The code will find them if you 
 that environment variable;  your other option is to run things directly from your jbolo
 directory, or make symlinks to the relevant places.
 - The atmosphere files need to be downloaded or otherwise generated. You can download Charlie Hill's hdf5 file containing a grid of atmospheric mission 
-vs (frequency, pwv, elevation) from http://pbfs.physics.berkeley.edu/BoloCalc/ATM/atm_20201217.hdf5
+vs (frequency, pwv, elevation) from [https://portal.nersc.gov/cfs/sobs/jbolo/atmos/atm_20201217.hdf5](https://portal.nersc.gov/cfs/sobs/jbolo/atmos/atm_20201217.hdf5)
 and put it in jbolo/atmos/atm_20201217.hdf5 .  You can either point to that file in the input yaml file, or not point to it and the code 
 should find it if you've put it there.
 
